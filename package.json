@@ -56,7 +56,10 @@
     "translation",
     "screenshot"
   ],
-  "author": "",
+  "author": {
+    "name": "Veritas-Calculus",
+    "email": "veritas-calculus@users.noreply.github.com"
+  },
   "license": "MIT",
   "devDependencies": {
     "electron": "^39.2.7",
