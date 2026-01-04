@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>划词翻译</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    :root {
+      --bg: #ffffff;
+      --text: #1d1d1f;
+      --text-secondary: #86868b;
+      --border: #d2d2d7;
+      --blue: #007AFF;
+      --green: #34C759;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1e;
+        --text: #f5f5f7;
+        --text-secondary: #98989d;
+        --border: #38383a;
+      }
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 16px;
+      -webkit-app-region: drag;
+      user-select: text;
+      min-height: 100vh;
+    }
+    
+    .container {
+      -webkit-app-region: no-drag;
+    }
+    
+    .section {
+      margin-bottom: 12px;
+    }
+    
+    .label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    
+    .content {
+      background: rgba(128, 128, 128, 0.1);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    
+    .content.original {
+      color: var(--text-secondary);
+    }
+    
+    .content.translated {
+      color: var(--text);
+    }
+    
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-secondary);
+      padding: 20px 0;
+    }
+    
+    .loading-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .error {
+      color: #FF3B30;
+      padding: 10px 12px;
+      background: rgba(255, 59, 48, 0.1);
+      border-radius: 8px;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+    }
+    
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+    
+    .btn-secondary {
+      background: rgba(128, 128, 128, 0.15);
+      color: var(--text);
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(128, 128, 128, 0.25);
+    }
+    
+    .close-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: rgba(128, 128, 128, 0.2);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+      -webkit-app-region: no-drag;
+    }
+    
+    .close-btn:hover {
+      background: rgba(128, 128, 128, 0.3);
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <button class="close-btn" id="btn-close">✕</button>
+  
+  <div class="container">
+    <div class="section">
+      <div class="label">原文</div>
+      <div class="content original" id="original-text"></div>
+    </div>
+    
+    <div id="loading" class="loading hidden">
+      <div class="loading-spinner"></div>
+      <span>翻译中...</span>
+    </div>
+    
+    <div id="result-section" class="section hidden">
+      <div class="label">翻译</div>
+      <div class="content translated" id="translated-text"></div>
+    </div>
+    
+    <div id="error-section" class="section hidden">
+      <div class="error" id="error-text"></div>
+    </div>
+    
+    <div class="actions">
+      <button class="btn btn-secondary" id="btn-copy">复制翻译</button>
+      <button class="btn btn-primary" id="btn-copy-all">复制全部</button>
+    </div>
+  </div>
+
+  <script>
+    const originalText = document.getElementById('original-text');
+    const translatedText = document.getElementById('translated-text');
+    const loading = document.getElementById('loading');
+    const resultSection = document.getElementById('result-section');
+    const errorSection = document.getElementById('error-section');
+    const errorText = document.getElementById('error-text');
+    
+    // 关闭窗口
+    document.getElementById('btn-close').addEventListener('click', () => {
+      window.electronAPI.closePopup();
+    });
+    
+    // ESC 关闭
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        window.electronAPI.closePopup();
+      }
+    });
+    
+    // 复制翻译
+    document.getElementById('btn-copy').addEventListener('click', () => {
+      if (translatedText.textContent) {
+        navigator.clipboard.writeText(translatedText.textContent);
+      }
+    });
+    
+    // 复制全部
+    document.getElementById('btn-copy-all').addEventListener('click', () => {
+      const text = `原文：\n${originalText.textContent}\n\n翻译：\n${translatedText.textContent}`;
+      navigator.clipboard.writeText(text);
+    });
+    
+    // 接收翻译数据
+    window.electronAPI.onPopupData((data) => {
+      originalText.textContent = data.original;
+      
+      if (data.loading) {
+        loading.classList.remove('hidden');
+        resultSection.classList.add('hidden');
+        errorSection.classList.add('hidden');
+      } else if (data.error) {
+        loading.classList.add('hidden');
+        resultSection.classList.add('hidden');
+        errorSection.classList.remove('hidden');
+        errorText.textContent = data.error;
+      } else if (data.translated) {
+        loading.classList.add('hidden');
+        resultSection.classList.remove('hidden');
+        errorSection.classList.add('hidden');
+        translatedText.textContent = data.translated;
+      }
+    });
+  </script>
+</body>
+</html>

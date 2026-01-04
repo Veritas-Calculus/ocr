@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';">
+  <title>VC OCR</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <nav class="nav-menu">
+        <a href="#" class="nav-item active" data-page="home">识别</a>
+        <a href="#" class="nav-item" data-page="translate">翻译</a>
+        <a href="#" class="nav-item" data-page="history">历史</a>
+        <a href="#" class="nav-item" data-page="settings">设置</a>
+      </nav>
+      <div class="sidebar-footer">
+        <kbd>Cmd+Shift+O</kbd>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- OCR 页面 -->
+      <section id="page-home" class="page active">
+        <div class="page-header">
+          <h1>识别</h1>
+          <button id="btn-capture" class="btn btn-primary">截图</button>
+        </div>
+        
+        <div class="ocr-container">
+          <div class="upload-area" id="upload-area">
+            <p>拖拽图片或点击选择</p>
+            <input type="file" id="file-input" accept="image/*" hidden>
+          </div>
+          
+          <div class="result-area" id="result-area" style="display: none;">
+            <div class="result-header">
+              <span>结果</span>
+              <div class="result-actions">
+                <button id="btn-copy" class="btn btn-sm">复制</button>
+                <button id="btn-translate-result" class="btn btn-sm">翻译</button>
+              </div>
+            </div>
+            <div class="result-content">
+              <textarea id="ocr-result" readonly placeholder="识别结果"></textarea>
+            </div>
+          </div>
+          
+          <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>识别中...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 翻译页面 -->
+      <section id="page-translate" class="page">
+        <div class="page-header">
+          <h1>翻译</h1>
+          <select id="translate-style-quick" class="style-select">
+            <option value="standard">标准</option>
+            <option value="professional">专业</option>
+            <option value="casual">口语</option>
+            <option value="literary">文学</option>
+            <option value="technical">技术</option>
+            <option value="brief">精炼</option>
+          </select>
+        </div>
+        
+        <div class="translate-container">
+          <div class="translate-panel">
+            <div class="panel-header">
+              <select id="source-lang">
+                <option value="auto">自动</option>
+                <option value="zh">中文</option>
+                <option value="en">英文</option>
+                <option value="ja">日语</option>
+              </select>
+            </div>
+            <textarea id="source-text" placeholder="输入文本..."></textarea>
+          </div>
+          
+          <button id="btn-swap" class="btn-swap">⇄</button>
+          
+          <div class="translate-panel">
+            <div class="panel-header">
+              <select id="target-lang">
+                <option value="zh">中文</option>
+                <option value="en">英文</option>
+                <option value="ja">日语</option>
+              </select>
+            </div>
+            <textarea id="target-text" readonly placeholder="翻译结果"></textarea>
+          </div>
+        </div>
+        
+        <div class="translate-actions">
+          <button id="btn-translate" class="btn btn-primary">翻译</button>
+          <button id="btn-copy-translation" class="btn">复制</button>
+        </div>
+      </section>
+
+      <!-- 历史记录页面 -->
+      <section id="page-history" class="page">
+        <div class="page-header">
+          <h1>历史</h1>
+          <button id="btn-clear-history" class="btn btn-danger">清空</button>
+        </div>
+        
+        <div class="history-list" id="history-list">
+          <div class="empty-state">
+            <p>暂无记录</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 设置页面 -->
+      <section id="page-settings" class="page">
+        <div class="page-header">
+          <h1>设置</h1>
+        </div>
+        
+        <div class="settings-container">
+          <!-- 服务提供商配置 -->
+          <div class="settings-group">
+            <h3>服务</h3>
+            <div class="form-item">
+              <label for="provider">提供商</label>
+              <select id="provider">
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="ollama">Ollama</option>
+                <option value="lmstudio">LM Studio</option>
+                <option value="custom">自定义</option>
+              </select>
+            </div>
+            <div class="form-item" id="api-key-group">
+              <label for="api-key">API Key</label>
+              <input type="password" id="api-key" placeholder="API Key">
+            </div>
+            <div class="form-item">
+              <label for="api-base">API 地址</label>
+              <input type="text" id="api-base" placeholder="https://api.openai.com/v1">
+            </div>
+            <div class="form-item btn-row">
+              <button id="btn-test-connection" class="btn btn-sm">测试</button>
+              <button id="btn-refresh-models" class="btn btn-sm">刷新模型</button>
+            </div>
+          </div>
+
+          <!-- OCR 设置 -->
+          <div class="settings-group">
+            <h3>OCR</h3>
+            <div class="form-item">
+              <label for="model">模型（仅显示支持视觉的模型）</label>
+              <select id="model">
+                <option value="gpt-4o">GPT-4o</option>
+              </select>
+              <small class="form-hint" id="model-hint"></small>
+            </div>
+            <div class="form-item">
+              <label for="ocr-style">模式</label>
+              <select id="ocr-style">
+                <option value="standard">标准</option>
+                <option value="code">代码</option>
+                <option value="table">表格</option>
+                <option value="handwriting">手写</option>
+                <option value="formula">公式</option>
+              </select>
+            </div>
+            <div class="form-item">
+              <label for="image-detail">精度</label>
+              <select id="image-detail">
+                <option value="high">高</option>
+                <option value="low">低</option>
+                <option value="auto">自动</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 翻译设置 -->
+          <div class="settings-group">
+            <h3>翻译</h3>
+            <div class="form-item">
+              <label for="translation-model">模型</label>
+              <select id="translation-model">
+                <option value="gpt-4o-mini">GPT-4o Mini</option>
+              </select>
+            </div>
+            <div class="form-item">
+              <label for="translation-style">风格</label>
+              <select id="translation-style">
+                <option value="standard">标准</option>
+                <option value="professional">专业</option>
+                <option value="casual">口语</option>
+                <option value="literary">文学</option>
+                <option value="technical">技术</option>
+                <option value="brief">精炼</option>
+              </select>
+            </div>
+            <div class="form-item">
+              <label for="translation-temperature">创意度</label>
+              <div class="range-container">
+                <input type="range" id="translation-temperature" min="0" max="10" value="3">
+                <span id="temperature-value">0.3</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="settings-actions">
+            <button id="btn-save-settings" class="btn btn-primary">保存</button>
+            <button id="btn-reset-settings" class="btn">重置</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 提示框 -->
+  <div class="toast" id="toast"></div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
