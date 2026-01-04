@@ -1,12 +1,16 @@
 const { app, BrowserWindow, ipcMain, globalShortcut, screen, clipboard, nativeImage, Tray, Menu } = require('electron');
 const path = require('path');
-const Store = require('electron-store');
 const { captureScreen, captureRegion } = require('./screenshot');
 const { performOCR } = require('./ocr');
 const { translate } = require('./translate');
 const { PROVIDERS, TRANSLATION_STYLES, OCR_STYLES, getProviderModels } = require('./providers');
 
-const store = new Store();
+// electron-store v11+ 使用 ESM，需要动态导入
+let store;
+(async () => {
+  const Store = (await import('electron-store')).default;
+  store = new Store();
+})();
 let mainWindow = null;
 let captureWindow = null;
 let popupWindow = null;
